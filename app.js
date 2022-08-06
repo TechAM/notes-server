@@ -82,4 +82,4 @@ app.post("/delete_note", (req, res) => {
         .catch((err) => res.status(500).json({ message: err }))
 })
 
-app.listen(5000)
+app.listen(process.env.PORT || 5000)

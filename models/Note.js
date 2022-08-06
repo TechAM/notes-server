@@ -8,9 +8,11 @@ const noteSchema = new mongoose.Schema(
         },
         text: {
             type: String,
+            default: "",
         },
         title: {
             type: String,
+            default: "",
         },
         pinned: {
             type: Boolean,

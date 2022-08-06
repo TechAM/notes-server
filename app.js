@@ -1,5 +1,6 @@
 const express = require("express")
 const app = express()
+const jwt = require("jsonwebtoken")
 const authRouter = require("./authRouter")
 
 const Note = require("./models/Note")
@@ -9,8 +10,9 @@ app.use(require("cors")())
 app.use(express.json())
 app.use("/auth", authRouter)
 
-// require("dotenv").config()
+require("dotenv").config()
 const mongoose = require("mongoose")
+const { JsonWebTokenError } = require("jsonwebtoken")
 mongoose.connect(process.env.DB_URL, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -23,10 +25,12 @@ app.get("/", (req, res) => {
     res.json({ message: "Hello World" })
 })
 
-app.get("/notes", async (req, res) => {
-    console.log("Sent notes")
+app.get("/notes", authenticateToken, async (req, res) => {
+    console.log("Sent notes to", req.user.username)
     const notes = await Note.find()
-    res.send(notes)
+
+    // filter posts based on user
+    res.send(notes.filter((note) => note.username === req.user.username))
 })
 
 app.get("/note/:id", async (req, res) => {
@@ -81,5 +85,21 @@ app.post("/delete_note", (req, res) => {
         })
         .catch((err) => res.status(500).json({ message: err }))
 })
+
+function authenticateToken(req, res, next) {
+    // get token, verify it's the correct user
+
+    //Bearer TOKEN si the form of the authorization header
+    const authHeader = req.headers["authorization"]
+    const token = authHeader && authHeader.split(" ")[1]
+    if (!token)
+        return res.status(401).json({ message: "Unauthorized: no token" })
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+        // 403 means we see u have a token but it's no longer valid
+        if (err) return res.status(403).json({ message: err.message })
+        req.user = user
+        next()
+    })
+}
 
 app.listen(process.env.PORT || 5000)

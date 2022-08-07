@@ -19,6 +19,10 @@ const noteSchema = new mongoose.Schema(
             required: true,
             default: false,
         },
+        username: {
+            type: String,
+            required: true,
+        },
     },
     { timestamps: true }
 )

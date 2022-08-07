@@ -55,13 +55,14 @@ router.post("/signup", async (req, res) => {
 
 router.post("/signin", async (req, res) => {
     const { username, password } = req.body
-    console.log("trying to sign in", username)
 
     // 400 means bad request
     if (!username)
         return res.status(400).json({ message: "Username is required" })
     if (!password)
         return res.status(400).json({ message: "Password is required" })
+
+    console.log("trying to sign in", username)
 
     // 401 means unauthorised
     const user = await User.findOne({ username: username })
@@ -75,7 +76,7 @@ router.post("/signin", async (req, res) => {
             user.toJSON(),
             process.env.ACCESS_TOKEN_SECRET
         )
-        console.log("User is logged in", accessToken)
+        console.log(`${username} is logged in`, accessToken)
         res.json({ accessToken: accessToken })
     } else {
         res.status(401).json({ user: user })

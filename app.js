@@ -1,12 +1,14 @@
 const express = require("express")
 const app = express()
 const jwt = require("jsonwebtoken")
+const cookieParser = require('cookie-parser')
 const authRouter = require("./authRouter")
 
 const Note = require("./models/Note")
 app.set("json spaces", 2)
 
 app.use(require("cors")())
+app.use(cookieParser())
 app.use(express.json())
 app.use("/auth", authRouter)
 
@@ -31,7 +33,6 @@ app.get("/notes", authenticateToken, async (req, res) => {
     const notes = await Note.find()
     let userNotes = notes.filter((note) => note.username == req.user.username)
     // filter posts based on user
-    // console.log(notes)
     res.send(userNotes)
 })
 
@@ -106,10 +107,11 @@ app.post("/delete_note", authenticateToken, async (req, res) => {
     }
 })
 
+// this is my custom middleware for the protected routes
 function authenticateToken(req, res, next) {
     // get token, verify it's the correct user
 
-    //Bearer TOKEN si the form of the authorization header
+    //Bearer TOKEN is the form of the authorization header
     const authHeader = req.headers["authorization"]
     const token = authHeader && authHeader.split(" ")[1]
     // console.log(req.headers)

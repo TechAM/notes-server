@@ -1,20 +1,20 @@
 const express = require("express")
 const app = express()
 const jwt = require("jsonwebtoken")
-const cookieParser = require('cookie-parser')
+const cookieParser = require("cookie-parser")
 const authRouter = require("./authRouter")
 
 const Note = require("./models/Note")
 app.set("json spaces", 2)
 
-app.use(require("cors")())
+// specify cors config because if we want to allow credentials then Access-Control-Allow-Origin must not use *
+app.use(require("cors")({ credentials: true, origin: "http://localhost:3000" })) 
 app.use(cookieParser())
 app.use(express.json())
 app.use("/auth", authRouter)
 
 require("dotenv").config()
 const mongoose = require("mongoose")
-const { authenticate } = require("passport")
 mongoose.connect(process.env.DB_URL, {
     useNewUrlParser: true,
     useUnifiedTopology: true,

@@ -8,12 +8,12 @@ const Note = require("./models/Note")
 app.set("json spaces", 2)
 
 // specify cors config because if we want to allow credentials then Access-Control-Allow-Origin must not use *
-app.use(require("cors")({ credentials: true, origin: "http://localhost:3000" })) 
+app.use(require("cors")({ credentials: true, origin: "http://localhost:3000" }))
 app.use(cookieParser())
 app.use(express.json())
 app.use("/auth", authRouter)
 
-require("dotenv").config()
+// require("dotenv").config()
 const mongoose = require("mongoose")
 mongoose.connect(process.env.DB_URL, {
     useNewUrlParser: true,

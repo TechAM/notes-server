@@ -9,47 +9,53 @@ router.get("/test", (req, res) => {
     res.send("/auth route is working!!!")
 })
 
+// when a field (username, email, password) is empty, this function sends a response message to client
+function fieldRequired(field, res) {
+    res.status(400).json({ message: `${field} is required` })
+}
+
 router.post("/signup", async (req, res) => {
     console.log("signing up...")
     const { username, email, password } = req.body
 
-    if (!username)
-        return res.status(400).json({ message: "Username is required" })
-    if (!email) return res.status(400).json({ message: "Email is required" })
-    if (!password)
-        return res.status(400).json({ message: "Password is required" })
+    if (!username) return fieldRequired("Username", res)
+    if (!email) return fieldRequired("Username", res)
+    if (!password) return fieldRequired("Password", res)
 
     User.find()
-        .or([{ username: username }])
+        .or([{ username }, { email }])
         .then(async (result) => {
-            console.log("Existing users: ", result)
+            // if no user with this username and email exists
             if (!result.length) {
+                // 10 is the saltRounds value - higher the number the more time it takes to hash
                 const hashedPassword = await bcrypt.hash(password, 10)
                 const user = new User({
                     username: username,
                     email: email,
                     password: hashedPassword,
                 })
-                console.log("Saving user")
                 user.save()
-                    .then((result) => {
+                    .then((user) => {
                         {
-                            console.log("Created and saved user")
-                            return res.status(201).json({ user: result })
+                            return res.status(201).json({ user })
                         }
                     })
                     .catch((err) => {
-                        res.status(500).json({ message: err.message })
+                        res.status(500).json({
+                            message: "Server error: couldn't create user",
+                        })
                     })
             } else {
-                console.log("User already exists")
                 // 409 means conflict
-                return res.status(409).json({ message: "User already exists" })
+                return res.status(409).json({
+                    message: "User with same username or email already exists",
+                })
             }
         })
         .catch((err) => {
-            console.log("Interval server error")
-            res.status(500).json({ message: err.message })
+            res.status(500).json({
+                message: "Server error: couldn't create user",
+            })
         })
 })
 
@@ -57,67 +63,68 @@ router.post("/signin", async (req, res) => {
     const { username, password } = req.body
 
     // 400 means bad request
-    if (!username)
-        return res.status(400).json({ message: "Username is required" })
-    if (!password)
-        return res.status(400).json({ message: "Password is required" })
-
-    console.log("trying to sign in", username)
+    if (!username) return fieldRequired("Username", res)
+    if (!password) return fieldRequired("Password", res)
 
     // 401 means unauthorised
-    const user = await User.findOne({ username: username })
-    if (!user) return res.status(401).json({ message: "No such user exists" })
+    try {
+        const user = await User.findOne({ username })
+        if (!user)
+            return res.status(401).json({ message: "No such user exists" })
 
-    const match = await bcrypt.compare(password, user.password)
-    if (match) {
-        const accessToken = generateAccessToken(user)
-        const refreshToken = generateRefreshToken(user)
+        const match = await bcrypt.compare(password, user.password)
+        if (match) {
+            const accessToken = generateAccessToken(user)
+            const refreshToken = generateRefreshToken(user)
 
-        user.refreshToken = refreshToken
-        user.save()
-            .then((user) => {
-                // send accessToken as a normal response
-                res.cookie("refreshtoken", refreshToken, {
-                    httpOnly: true,
-                    // path because we don't want to send this cookie along with every single request
-                    // only on the /refresh_token endpoint which is when we want to get a new access token with our refresh token
-                    path: "/auth/refresh_token",
+            user.refreshToken = refreshToken
+            user.save()
+                .then((user) => {
+                    // send accessToken as a normal response
+                    res.cookie("refreshtoken", refreshToken, {
+                        httpOnly: true,
+                        // path because we don't want to send this cookie along with every single request
+                        // only on the /refresh_token endpoint which is when we want to get a new access token with our refresh token
+                        path: "/auth/refresh_token",
+                    })
+                    return res.json({ accessToken: accessToken })
                 })
-                return res.json({ accessToken: accessToken })
-            })
-            .catch((err) => {
-                res.status(500).json({ message: "Server error sending tokens" })
-            })
-
-        console.log(`${username} is signed in`, accessToken)
-    } else {
-        res.status(401).json({ message: "Incorrect password" })
+                .catch((err) => {
+                    res.status(500).json({
+                        message: "Server error: couldn't send tokens",
+                    })
+                })
+        } else {
+            res.status(401).json({ message: "Incorrect password" })
+        }
+    } catch (err) {
+        return res.json({ message: "Server error: couldn't sign in" })
     }
 })
 
-const generateAccessToken = (user) => {
-    let obj = { username: user.username }
-
-    return jwt.sign(obj, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: "10m",
-    })
-}
-
-const generateRefreshToken = (user) => {
-    let obj = { username: user.username }
-
-    return jwt.sign(obj, process.env.REFRESH_TOKEN_SECRET, {
-        expiresIn: "7d",
-    })
-}
-
-router.delete("/signout", (req, res) => {
+router.delete("/signout", (_req, res) => {
     // clear the refreshtoken from the cookie
     // with no refresh token we can't get new access token
-    console.log("Signing out")
-    res.clearCookie("refreshtoken", { path: "/auth/refresh_token" })
-    return res.status(200).json({ message: "Signed out" })
+    try {
+        console.log("Signing out")
+        res.clearCookie("refreshtoken", { path: "/auth/refresh_token" })
+        return res.status(200).json({ message: "Signed out" })
+    } catch (err) {
+        return res
+            .status(500)
+            .json({ message: "Server error: couldn't sign out" })
+    }
 })
+const generateAccessToken = (user) => {
+    return generateToken(user, process.env.ACCESS_TOKEN_SECRET, "10m")
+}
+const generateRefreshToken = (user) => {
+    return generateToken(user, process.env.REFRESH_TOKEN_SECRET, "7d")
+}
+const generateToken = (user, secret, expiresIn) => {
+    let obj = { username: user.username }
+    return jwt.sign(obj, secret, { expiresIn })
+}
 
 router.post("/refresh_token", (req, res) => {
     const refreshTokenCookie = req.cookies.refreshtoken

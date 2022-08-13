@@ -1,3 +1,5 @@
+const sendResetLink = require("./util/sendEmail")
+
 const express = require("express")
 const bcrypt = require("bcrypt")
 const router = express.Router()
@@ -15,11 +17,10 @@ function fieldRequired(field, res) {
 }
 
 router.post("/signup", async (req, res) => {
-    console.log("signing up...")
     const { username, email, password } = req.body
 
     if (!username) return fieldRequired("Username", res)
-    if (!email) return fieldRequired("Username", res)
+    if (!email) return fieldRequired("Email", res)
     if (!password) return fieldRequired("Password", res)
 
     User.find()
@@ -34,17 +35,7 @@ router.post("/signup", async (req, res) => {
                     email: email,
                     password: hashedPassword,
                 })
-                user.save()
-                    .then((user) => {
-                        {
-                            return res.status(201).json({ user })
-                        }
-                    })
-                    .catch((err) => {
-                        res.status(500).json({
-                            message: "Server error: couldn't create user",
-                        })
-                    })
+                return saveUser(user, res, "Server error: couldn't create user")
             } else {
                 // 409 means conflict
                 return res.status(409).json({
@@ -152,5 +143,76 @@ router.post("/refresh_token", (req, res) => {
         return res.json({ accessToken: accessToken })
     })
 })
+
+router.post("/forgot_password", async (req, res) => {
+    const email = req.body.email
+    try {
+        const user = await User.findOne({ email })
+        if (!user)
+            return res.status(401).json({ message: "No such user exists" })
+
+        // With the combination of the user’s password hash and created date
+        // the JWT will become a one-time-use token, because once the user has changed their password
+        // it will generate a new password hash invalidating the secret key that references the old password.
+        const secret = user.password + user.createdAt
+        const token = jwt.sign({ email }, secret)
+        const link = `http://localhost:3000/reset_password/${user._id}/${token}`
+        sendResetLink(email, link)
+    } catch (err) {
+        return res.status(500).json({
+            message: "Server error: couldn't send reset password link",
+        })
+    }
+    res.json({ message: "resetting" })
+})
+
+router.post("/reset_password", async (req, res) => {
+    const { id, token, newPassword } = req.body
+
+    try {
+        const user = await User.findById(id)
+        if (!user)
+            return res.status(401).json({ message: "No such user exists" })
+
+        // because we're using the user's current password as part of the secret, once the password has been changed
+        // this secret won't be able to verify the same token anymore
+        // hence making the password reset link invalid
+        const secret = user.password + user.createdAt
+        let payload
+        try {
+            payload = jwt.verify(token, secret)
+        } catch (err) {
+            return res
+                .status(403)
+                .json({ message: "Password reset link is old" })
+        }
+
+        // we get the user with this specified id
+        // we get the user that is represented by this token - if the jwt verificiation fails that means there's been some tampering with something
+        // and we make sure that they are the same
+        if (payload.email != user.email)
+            return res
+                .status(403)
+                .json({ message: "Unauthorized: can't change password" })
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10)
+        user.password = hashedPassword
+        return saveUser(user, res, "Server error: couldn't reset password")
+    } catch (err) {
+        return res
+            .status(500)
+            .json({ message: "Server error: couldn't reset password" })
+    }
+})
+
+function saveUser(user, res, errMessage) {
+    user.save()
+        .then((user) => {
+            return res.status(201).json({ user })
+        })
+        .catch((err) => {
+            return res.status(500).json({ message: errMessage })
+        })
+}
 
 module.exports = router

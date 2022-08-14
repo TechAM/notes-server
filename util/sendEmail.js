@@ -1,16 +1,26 @@
 let nodemailer = require("nodemailer")
+require("dotenv").config()
 
+// let transporter = nodemailer.createTransport({
+//     host: "smtp.mailtrap.io",
+//     port: 2525,
+//     auth: {
+//         user: "b3578cc25ea47f",
+//         pass: "d3fd6b77ed4fd8",
+//     },
+// })
 let transporter = nodemailer.createTransport({
-    host: "smtp.mailtrap.io",
-    port: 2525,
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
     auth: {
-        user: "b3578cc25ea47f",
-        pass: "d3fd6b77ed4fd8",
+        user: "softwaresolankis@gmail.com",
+        pass: process.env.GMAIL_PASS,
     },
 })
 
 let mailOptions = {
-    from: "frome@email.com",
+    from: "softwaresolankis@gmail.com",
     to: "",
     subject: "Notes reset password link",
 }

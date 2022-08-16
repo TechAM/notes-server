@@ -16,6 +16,15 @@ function fieldRequired(field, res) {
     res.status(400).json({ message: `${field} is required` })
 }
 
+router.get("/users", async (req, res) => {
+    try {
+        const users = await User.find()
+        res.json({ users })
+    } catch (err) {
+        res.status(500).json({ message: "Error: couldn't get all users" })
+    }
+})
+
 router.post("/signup", async (req, res) => {
     const { username, email, password } = req.body
 
@@ -97,7 +106,6 @@ router.delete("/signout", (_req, res) => {
     // clear the refreshtoken from the cookie
     // with no refresh token we can't get new access token
     try {
-        console.log("Signing out")
         res.clearCookie("refreshtoken", { path: "/auth/refresh_token" })
         return res.status(200).json({ message: "Signed out" })
     } catch (err) {
@@ -202,6 +210,17 @@ router.post("/reset_password", async (req, res) => {
         return res
             .status(500)
             .json({ message: "Server error: couldn't reset password" })
+    }
+})
+
+router.delete("/delete_user", async (req, res) => {
+    const { username } = req.body
+
+    try {
+        const user = await User.findOneAndDelete({ username })
+        res.json({ user })
+    } catch (err) {
+        res.status(500).json({ message: "Error: couldn't delete user" })
     }
 })
 

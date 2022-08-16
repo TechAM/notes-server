@@ -8,7 +8,9 @@ const Note = require("./models/Note")
 app.set("json spaces", 2)
 
 // specify cors config because if we want to allow credentials then Access-Control-Allow-Origin must not use *
-app.use(require("cors")({ credentials: true, origin: "http://localhost:3000" }))
+app.use(
+    require("cors")({ credentials: true, origin: "http://92.28.187.146:3000" })
+)
 app.use(cookieParser())
 app.use(express.json())
 app.use("/auth", authRouter)
@@ -160,4 +162,5 @@ function authenticateToken(req, res, next) {
     })
 }
 
-app.listen(process.env.PORT || 5000)
+// exporting this so we can use chai to test the server
+module.exports = app.listen(process.env.PORT || 5000)

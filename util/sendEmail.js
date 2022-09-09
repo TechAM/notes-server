@@ -27,7 +27,6 @@ const sendResetLink = (to, link) => {
     `
     transporter.sendMail(mailOptions, (err, info) => {
         if (err) return console.log(err)
-        console.log(`Email sent: ${info.response}`)
     })
 }
 

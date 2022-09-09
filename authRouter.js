@@ -26,7 +26,6 @@ router.get("/users", async (req, res) => {
 })
 
 router.post("/signup", async (req, res) => {
-    console.log("trying to sign up")
     const { username, email, password } = req.body
 
     if (!username) return fieldRequired("Username", res)
@@ -128,7 +127,6 @@ const generateToken = (user, secret, expiresIn) => {
 
 router.post("/refresh_token", (req, res) => {
     const refreshTokenCookie = req.cookies.refreshtoken
-    console.log("refresh token in cookie", refreshTokenCookie)
     // if we don't have a token in our request e.g. we've signed out (which clears the refreshtoken cookie)
     if (!refreshTokenCookie) return res.json({ accessToken: "" })
     // we have a token, let's verify it

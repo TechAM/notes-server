@@ -26,6 +26,7 @@ router.get("/users", async (req, res) => {
 })
 
 router.post("/signup", async (req, res) => {
+    console.log("trying to sign up")
     const { username, email, password } = req.body
 
     if (!username) return fieldRequired("Username", res)

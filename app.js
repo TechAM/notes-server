@@ -8,7 +8,18 @@ const Note = require("./models/Note")
 app.set("json spaces", 2)
 
 // specify cors config because if we want to allow credentials then Access-Control-Allow-Origin must not use *
-app.use(require("cors")({ credentials: true, origin: "http://localhost:3000" }))
+// origin is basically the address on which the react web server will be running
+app.use(
+    require("cors")({
+        credentials: true,
+        origin: [
+            "http://localhost:3000",
+            "http://quill-webapp.web.app",
+            "quill-webapp.firebaseapp.com",
+            "note.avimukesh.com",
+        ],
+    })
+)
 app.use(cookieParser())
 app.use(express.json())
 app.use("/auth", authRouter)

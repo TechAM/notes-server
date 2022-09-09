@@ -14,9 +14,9 @@ app.use(
         credentials: true,
         origin: [
             "http://localhost:3000",
-            "http://quill-webapp.web.app",
-            "quill-webapp.firebaseapp.com",
-            "note.avimukesh.com",
+            "https://quill-webapp.web.app",
+            "https://quill-webapp.firebaseapp.com",
+            "https://note.avimukesh.com",
         ],
     })
 )

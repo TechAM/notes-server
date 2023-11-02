@@ -24,7 +24,7 @@ app.use(cookieParser())
 app.use(express.json())
 app.use("/auth", authRouter)
 
-require("dotenv").config()
+// require("dotenv").config()
 const mongoose = require("mongoose")
 mongoose.connect(process.env.DB_URL, {
     useNewUrlParser: true,

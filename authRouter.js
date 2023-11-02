@@ -72,19 +72,13 @@ router.post("/signin", async (req, res) => {
         if (!user)
             return res.status(401).json({ message: "No such user exists" })
 
-        console.log(user)
         const match = await bcrypt.compare(password, user.password)
 
-        console.log(match)
         if (match) {
             const accessToken = generateAccessToken(user)
             const refreshToken = generateRefreshToken(user)
 
             user.refreshToken = refreshToken
-
-            console.log(accessToken)
-            console.log(refreshToken)
-
 
             user.save()
                 .then((user) => {

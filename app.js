@@ -24,7 +24,7 @@ app.use(cookieParser())
 app.use(express.json())
 app.use("/auth", authRouter)
 
-// require("dotenv").config()
+require("dotenv").config()
 const mongoose = require("mongoose")
 mongoose.connect(process.env.DB_URL, {
     useNewUrlParser: true,
@@ -172,4 +172,5 @@ function authenticateToken(req, res, next) {
 }
 
 // exporting this so we can use chai to test the server
-module.exports = app.listen(process.env.PORT || 5000)
+const port = process.env.PORT || 5000
+module.exports = app.listen(process.env.PORT || 5000, ()=>console.log(`Listening on port ${port}`))
